@@ -1,0 +1,499 @@
+\documentclass{llncs}
+\usepackage{amsmath,amssymb,subfigure}
+\usepackage{algorithm,algorithmic}
+\usepackage{graphicx}
+\usepackage{comment}
+\newtheorem{observation}{Observation}
+\usepackage[switch*]{lineno}
+\usepackage{framed}
+
+\makeatletter
+\def\makeLineNumberLeft{%
+  \linenumberfont\llap{\hb@xt@\linenumberwidth{\LineNumber\hss}\hskip\linenumbersep}% left line number
+  \hskip\columnwidth% skip over column of text
+  \rlap{\hskip\linenumbersep\hb@xt@\linenumberwidth{\hss\LineNumber}}\hss}% right line number
+\leftlinenumbers% Re-issue [left] option
+\makeatother
+
+\makeatletter
+\newcommand\xleftrightarrow[2][]{%
+  \ext@arrow 9999{\longleftrightarrowfill@}{#1}{#2}}
+\newcommand\longleftrightarrowfill@{%
+  \arrowfill@\leftarrow\relbar\rightarrow}
+\makeatother
+
+
+\begin{document}
+
+\title{Secure Multi-party Graph Computation: Elimination of trusted Third Parties }
+%\author{Manas Agarwal\inst{2} \and Rishi Ranjan Singh\inst{1} \and  Shubham Chaudhary\inst{2} \and Sudarshan Iyengar\inst{1}}
+%\authorrunning{Manas Agarwal \and Rishi Ranjan Singh \and Shubham Chaudhary \and Sudarshan Iyengar}
+%
+%\institute{Department of Computer Science and Engineering,
+%Indian Institute of Technology, Ropar,
+%Punjab, India.  \newline
+%\email{\{ rishirs, sudarshan \} @iitrpr.ac.in}
+%\and
+%Department of Mathematics, 
+%Indian Institute of Technology Roorkee, 
+%Uttarakhand, India. \newline
+%\email{\{ manasuma, shubhuma\} @iitr.ac.in}}
+
+
+\maketitle
+\begin{abstract}
+The abstract goes here
+\end{abstract}
+%------------------------------------------------------------------------
+\section{Introduction}
+\linenumbers
+The advancement in technology has allowed individuals to stay connected socially through various online 
+networks such as Facebook, Twitter, LinkedIn, LiveJournal, etc. These networks can be visualised as graphs of social 
+actors (individuals and/or organisations) seen as nodes and sets of dyadic ties between them as edges that may 
+correspond to a variety of relationships- friendship, common interests, financial exchanges and many others. 
+This has led to the availability of copious amounts of data related to the social interactions; accessibility of which,
+however, is not at par with its availability because of privacy issues of the involved individuals. With the emerging 
+interest in the analysis of these social networks, the difficulty in accessing the underlying network has raised 
+much concern.\\
+
+Social Network Analysis (SNA) is the methodology of data collection, statistical analysis and studying the variety of 
+theories that explain the patterns observed in these structures[1]. The analysis of the underlying network is beneficial 
+for various case studies such as the transmission of diseases[5,12], measuring influence of a publication[14], 
+classification of the influence or popularity of individuals[15], detection of collusion and fraud, functioning of 
+computer networks, behaviour of physical and biological systems, evaluation of the network’s resilience to faults and 
+attacks and so on. It is the topology of the network that is known to affect the underlying dynamics such as information 
+flow, social behaviour, small world phenomenon, structural properties such as existence of communities, hubs, etc. 
+Nevertheless, the key to performing SNA is that we have the social network at our disposal. The availability of the 
+network data depends upon the willingness of social actors to share their private data. User data may be made public 
+for the analysis in some cases, while in the case of sensitive information, data owners may value their privacy more. 
+For example, [5] builds the network of the people of Colorado Springs, USA with HIV infection and their partners at risk 
+through the process of interviewing them. The study relates the structure of the network to the epidemicity of the STD. 
+As in the above example, it would be required that the individuals disclose the intimate relationships they have had 
+with other individuals, which they may be hesitant to reveal. Most of the sexual network data are collected through 
+interviews, surveys and hospital records. This amounts to the data being collected by some trusted third party who is 
+responsible for anonymizing the data prior to publishing the network for analysis. Anonymization is a simple process in 
+which every information about the social actors is removed (i.e. name, email-address etc.) but the interconnections 
+between social actors are retained. The idea is to keep the identity of the social actors involved private while 
+researchers can still use the structure of the network for analysis. While social actors can be convinced that their 
+privacy is not compromised, they still might worry that the third party may compromise their privacy in the future. 
+This prevents individuals from sharing their data privately through a trusted third party. Thus, there is a necessity 
+for a method to generate the underlying network such that no external agent learns the identity of any individual in the 
+network. This requires that an anonymized network be constructed by those individuals who are themselves a part of the 
+network under consideration. Also, the process should be such that, no individual participating in the construction should 
+be able to learn information related to any other individual. \\
+
+A few instances where the existence of such a method would help generate the network structure that has sensitive information are listed below:-
+\begin{itemize}
+\item Sexual networks, as seen above, can be easily computed by the concerned individuals themselves.
+\item The underlying network of people- like/dislike network, in an office can reveal a lot about the environment 
+being healthy or not. In such situations, employees may not be comfortable revealing their true feelings for his/her 
+colleagues. %Our protocol guarantees that a person’s information is not exposed. While, at the same time, the anonymized network structure is obtained for analysis.
+\item If the owner of a company wishes to determine the optimal number of mangers that he needs to appoint from 
+amongst his current employees, he should look at the underlying network of employees and see how many hubs are present. 
+%This network again could be computed with the help of our protocol.
+\item The underlying structure of a social network of the type PatientsLikeMe could prove very useful for the research 
+on various diseases[13].
+\end{itemize}
+The anonymization defined above (removing labels from nodes and preserving the structure) is known as naive 
+anonymization. [3] explains how naive anonymization is not enough, i.e. some of the nodes are still re identifiable 
+with little prior knowledge about the network. They describe passive and active attacks to re-identify some nodes in
+a naively anonymized network. [9] proposes a measure called topological anonymity which assesses the vulnerability 
+of a network against node re-identification. The discussion in our paper will not concern this issue as [4,6,7,8,10] describe how to modify a naively anonymized network while preserving the usefulness of the network but 
+rendering re-identification attacks useless to a certain extent. Once we have a naively anonymized network using 
+our protocol, individuals can use the techniques mentioned in the references above to further ensure the privacy 
+protection before releasing the network.\\
+
+\subsection{Our Contribution}
+In this paper, we provide a method for secure computation 
+of a graph (network). Our contribution is two folds:
+\begin{itemize}
+\item We provide a protocol that the individuals of the network can 
+follow to generate the underlying unlabelled network and thereby eliminating the need for a trusted third party
+\item As a part of the protocol, we also provide a technique using which $n$ individuals assign themselves a unique number 
+between $1-n4$ (i.e a random permutation of n), such that each individual knows only his number and none others'. 
+This also is done without a third party.
+\end{itemize} 
+\subsection{Roadmap}
+\emph{Arrangement of sections of the paper goes here}
+
+%--------------------------------------------------------------------------
+
+\section{Preliminaries}
+We begin with the definitions of a few terms that lay the groundwork to understand our protocol. The individuals who are a part of the network under consideration will be referred to as parties henceforth.
+\begin{itemize}
+\item \emph{Column Replicated matrix \bf(CRM)}: is an $n$x$n$ that is generated by replicating a random $n$x$1$ column vector $n$ times. The column vector to be replicated is chosen uniformly at random from set of $n$x$1$ vectors in $Z_q$ (where $q \in \mathbb{N}$ and $Z_q$ is a group under addition )  . \begin{center}
+$
+M=
+  \begin{pmatrix}
+    1 & 1 & 1 & 1  \\
+    6 & 6 & 6 & 6  \\
+    3 & 3 & 3 & 3  \\
+    5 & 5 & 5 & 5
+  \end{pmatrix}
+  $
+
+\end{center}
+
+\item \emph{Mapped adjacency vector \bf($MA_i$)}: The adjacency vector of a  party $P_i$ is of the order $n$x$1$ and consists of 1's to indicate the presence of a tie and 0's otherwise. We set a variable called \emph{splitter} $\bf(k)$ to some value in $Z_q$ and map all the 0's in the adjacency vector to some number less than $k$, uniformly at random	 and map all the 1's in the adjacency vector to some number greater than or equal to $k$, uniformly at random. This modified adjacency vector is called a \emph{mapped adjacency vector ($MA_i$)} of the party. 
+\begin{center}
+$
+A_i=
+  \begin{pmatrix}
+    1 & 0 & 0 & 1  
+  \end{pmatrix}
+  $
+  $
+\ \ \ \xrightarrow{q=6,k=3}
+  $
+\hspace{.5cm}
+$
+MA_i=
+  \begin{pmatrix}
+    4 & 1 & 0 & 5  
+  \end{pmatrix}
+  $
+
+\end{center}
+
+\item \emph{Mapped adjacency matrix \bf(MA)}: The matrix obtained using mapped adjacency vectors of all the parties, where each row of the matrix is the $MA_i$ corresponding to some party $P_i$, is called mapped adjacency matrix $MA$. Note that if the value of $k$ is known we can easily reverse map the mapped adjacency matrix to original matrix.
+\begin{center}
+$
+MA=
+  \begin{pmatrix}
+    5 & 3 & 4 & 3  \\
+    0 & 0 & 5 & 3  \\
+    3 & 0 & 0 & 3  \\
+    5 & 5 & 0 & 0
+  \end{pmatrix}
+  $
+  $
+\ \ \  \xleftrightarrow{\text{q=6,k=3}}
+$
+$
+A=
+  \begin{pmatrix}
+    1 & 1 & 1 & 1  \\
+    0 & 0 & 1 & 1  \\
+    1 & 0 & 0 & 1  \\
+    1 & 1 & 0 & 0
+  \end{pmatrix}
+  $
+
+\end{center}
+
+\item \emph{View}: The view of a party consists of all the information/data it handles during the execution of the protocol.  
+
+\item \emph{Adversary}: There is a possibility of the parties being corrupted either by sharing their views or by deviating from the protocol (i.e not following the instructions as per the protocol). This situation is modelled with the help of a centralised adversary who is capable of influencing the individual parties. That is, the adversary is able to listen to the channel over which the party is communicating as well as meddle with the data being communicated.
+
+
+\item \emph{Passive and active security }: We say a party is passively corrupted by an adversary when he is only listening to the conversation of the party. Let say adversary has passively corrupted some subset of the parties of size t. If adversary is not able to get any information about the inputs and outputs of the honest parties then we call the protocol is secure against passive corruption.\\
+A party is actively corrupted by an adversary if it is taking all the decisions taken by party in the protocol. If the active corruption of any t parties does not lead to the leakage of honest parties' input and output then we call the protocol to be active secure against the corruption of size t.
+
+\item \emph{Static and dynamic security }: A protocol is considered statically secure if protocol is actively or passively secure against corruptions of size t if throughout the protocol same set of parties are corrupt. i.e. the set of corrupted parties doesn't change during the execution of the protocol.\\
+While a protocol is considered dynamically secure is actively or passively secure even when the parties which are corrupt changes during the protocol but the size of corrupted parties never gets bigger than t.
+
+\item \emph{Allowed influence and leakage}: When a party changes his input (i.e. gives wrong input to the protocol) we don't consider it a deviation from the protocol. Because we can't stop the parties from changing their inputs. For each party, input substitution is not considered as a deviation from the protocol. This is because honest party can also change their input based on their discretion. Thus, input substitution constitutes allowed influence that an adversary can have on a party. Similarly each party’s input and its output are the allowed leakage for that party as no ideal functionality can hide these from the parties.
+\end{itemize}
+
+
+
+
+%--------------------------------------------------------------------------
+\section{Problem Definition}
+The problem that we will be looking at is the secure generation of a given network of individuals. Secure here means that no knowledge regarding the identity of nodes in the network is revealed to anyone (anonymized) and correctness of the network generated is guaranteed. Thus, we cannot have any third party generating the graph. %The individuals who are a part of the network, themselves generate the network. These individuals, henceforth, will also be referred to as parties.
+ The secondary concern that needs to be addressed is that, none of the parties, in the graph generation process, gains any information associated with other parties. That is, the protocol must be such that the privacy of no party is compromised even during the execution of the protocol. Although these conditions seem sufficient, there is yet another case that needs to be handled in order to make the protocol robust. What would result if there were certain parties who are corrupt? Would there be any information leak when these corrupt parties pool their data (i.e all the information seen by them during protocol execution) in order to compromise other honest parties' privacy? The protocol must be resilient to such attacks as well.\\
+The SMPGC-Protocol that is described in the next section ensures that all the above mentioned conditions are met. It is also shown that the protocol is passively secure. The assumption made is that there are $n$ parties, $P_1,P_2,..P_n$, who are interested in computing their underlying network. 
+
+
+
+%--------------------------------------------------------------------------
+\section{Methods}
+In this section, we shall provide a protocol for generating the underlying graph on $n$ parties $P_1,P_2,...P_n$. The final output of the protocol will be the unlabelled adjacency matrix representing the underlying graph. Hence, the protocol involves the parties processing matrices of the order $n$x$n$ which would finally morph the desired adjacency matrix. All the matrices, vectors and the operations performed on them in the following discussion are under modulo q, where q is some integer whose significance is discussed in the discussion section. \\
+
+The SMPGC-Protocol is built to function on certain sub-protocols, each designed to realize different segments necessary to obtain the end result. Thus, we shall look at each of the sub-protocol and understand what they independently achieve before we delve into the actual protocol.\\
+
+\subsection{Protocol for Secret Sharing}
+Cramer et al., in their book [2], describe the tool known as secret sharing. The same idea is used here. The secret that each party $P_i$ is required to share is some value $s_i$ taken from $Z_q$. The end result that is desired is some function ($F$) of all the parties' secret $F(s_1,s_2,...s_n)$ without revealing any of the $s_i$. In the context of our protocol, a party $P_i$ shares his secret matrix $s_i$ with the rest of the parties. He does so by picking $n$ matrices of the same size as $s_i$, uniformly at random from set of all the matrices of that size, such that their sum is equal to $s_i$. Call these matrices $s_{i,1},s_{i,2},...s_{1,n}$ as the shares of the secret $s_i$. The party $P_i$ then distributes these $n$ shares among the rest of the parties, with each party getting a single share. The secret $s_i$ has now been secretly shared between the parties such that all the parties can come together and regenerate the secret but any number of parties less than n cannot know anything about the secret.  
+
+\subsection{Protocol for Addition}
+Let us assume that each party $P_i$ has finished distributing the shares of his secret $s_i$ with all the parties using secret sharing protocol mentioned above. The desired function $F$ in this case is the sum of every party's secret. To compute this sum without revealing any of the secret $s_i$, each party will calculate the sum of all the shares it has received, corresponding to each secret and then announces this sum of shares. By adding all these publicly available sum of shares, one can obtain the sum of all the secret matrices and hence realize $F$. 
+
+\subsection{Protocol for Secure Permutation}
+The aim of this protocol is to achieve the assignment of a unique number ,between $1-n$, to each party. Thus, every party's number put together would generate a permutation of $n$. Another restriction, however, is that the number assigned to each party is his private knowledge. Thus, the protocol given below allows a set of $n$ parties to collectively come to consensus on a unique number assignment for each such that no one knows any other party's number. The protocol is as given below:\\
+\begin{description}
+\item[Step 1:]\hspace{2mm} All the parties (active participants) choose a random number between $1 - n$
+\item[Step 2:]\hspace{2mm} Now begins the rounds of questioning. In each round of questioning, the following question is asked- “Has anyone chosen the number $i$ ?”, where $i$ runs from $1-n$. The answer to the question is obtained through voting implemented using the protocol for secure addition where each party shares a secret 1 to denote a positive vote (Yes) and 0 otherwise (No).
+\item[Step 3:]\hspace{2mm} What we obtain as answer in the questioning round $i$ is the number of people who happened to choose their random number as $‘i’$. All the parties also maintain an ordered list of current free slots. Free slots list has the numbers that are yet to be assigned. Initially the list is empty.
+\begin{itemize}
+\item If the voting results in the answer zero, it indicates none have chosen the number $i$. The particular $i$ is then queued in the list of free slots.
+\item If the voting results in the answer one, then there are no duplicates. Hence, it is assumed that the party is allotted the first number in the free list.Thus, the particular $i$ is dequeued from the list. If the free list is currently empty, then the party is assumed to have chosen the number $i$ itself.
+\item If the voting results in an answer greater than one, then it indicates that there are duplicates as more than one party has chosen the same number. In this case, none of the parties are assigned any number in this round. The particular $i$ is added to the free slot instead.
+\end{itemize} 
+\item[Step 4:]\hspace{2mm} Let there be $x$ number of parties that have chosen unique integers. Then, after the last round of questioning - “Has anyone chosen the number $'n'$?”, all the $x$ parties would have been allotted a unique number in the range $1-x$.
+ \item[Step 5:]\hspace{2mm} The steps 1 through 4 is repeated until all the parties are assigned a random number. Each cycle of steps 1-4 is called a pass. In each pass, the following changes are made:
+ \begin{itemize}
+ \item Only those parties that had selected duplicate numbers in the previous pass and hence not allotted a number, actively participate. The parties who are assigned a number continue participating passively.
+ \item When repeating the step 1, the active participants now choose a random number from the range $x+1 - n$ instead of $1-n$
+ \item Similarly, in each pass, the questioning rounds will have $‘i’$ run from $x+1 to n$
+ \item The $‘x’$ parties whose number was fixed in any of the previous passes continue to participate passively where they only take part in voting. They vote a 0 in each round of the passes.
+ \end{itemize}
+\end{description}
+
+\subsection{The SMPGC-Protocol}
+Now that the sub-protocols for secret sharing, secure addition and secure permutation generation is known, we can build on the SMPGC-Protocol. This protocol is to be followed by the parties who wish to compute their underlying network. The protocol is as given below.
+\begin{table*}[t]
+\label{table: Computations}
+\centering
+\caption{Computations by a Party }
+\begin{tabular}{|l|l|l|l|l|l|l|l|}
+\hline
+$P_1$ & $P_2$ & $P_3$ & - & - & - & $P_{n-1}$ & $P_n$\\ \hline
+\hline
+$s_{1,1}$ & $s_{1,2}$ & $s_{1,3}$ & - & - & - & $s_{1,(n-1)}$ & $s_{1,n}$\\ \hline
+$s_{2,1}$ & $s_{2,2}$ & $s_{2,3}$ & - & - & - & $s_{2,(n-1)}$ & $s_{2,n}$\\ \hline
+$s_{3,1}$ & $s_{3,2}$ & $s_{3,3}$ & - & - & - & $s_{3,(n-1)}$ & $s_{3,n}$\\ \hline 
+- & - & - & - & - & - & - & -\\ \hline
+- & - & - & - & - & - & - & -\\ \hline
+- & - & - & - & - & - & - & -\\ \hline
+- & - & - & - & - & - & - & -\\ \hline
+$s_{n,1}$ & $s_{n,2}$ & $s_{n,3}$ & - & - & - & $s_{n,(n-1)}$ & $s_{n,n}$\\ \hline 
+$\Sigma_{i=1}^{i=n}s_{i,1}=u_1$ & $\Sigma_{i=1}^{i=n}s_{i,2}=u_2$ & $\Sigma_{i=1}^{i=n}s_{i,3}=u_3$ & - & - & - & $\Sigma_{i=1}^{i=n}s_{i,n-1}=u_{n-1}$ & $\Sigma_{i=1}^{i=n}s_{i,n}=u_n$\\ \hline 
+\end{tabular}
+\label{table:example}
+\end{table*}
+\begin{description}
+ \item[Step 1:]\hspace{2mm} Computing the \textit{splitter} \textbf{k} \\
+The choice of splitter is dependent on the density of the graph that is being constructed. This is easily computable once we know the sum of degree of all the nodes in the graph, i.e the number of ties each party has in the network. Thus the parties can choose the secret as their degree in the network given by the number of one's in their adjacency vector. This is shared using the Secret Sharing protocol. All the parties will add these secrets using the protocol for Secure Addition . This gives the total degree $d$ of the network. The density of the graph $D$ can be computed as: 
+\begin{center}
+$D=\frac{d}{n^2}$
+\end{center}
+Each party sets the value of $k$ (the splitter used to map adjacency vector) to $D*q$, where $q$ is the input space $Z_q$ that was chosen. This will result in the uniform distribution of the mapped adjacency vector under modulo $q$. However, the assumption made here is that all the adjacency vectors with given density are possible.   
+
+\item[Step 2:]\hspace{2mm} \textbf{Hidden Permutation} generation\\
+The next step is for the parties to unanimously assign oneself a distinct number between $1-n$ using the protocol for secure permutation. Let the number assigned to a party $P_i$ be denoted by $a_i$. Thus, each of the $a_i$ is unique and spans over the entire range $1-n$. 
+
+\item[Step 3:]\hspace{2mm} Computing the \textbf{unlabelled mapped adjacency matrix}
+\begin{itemize}
+
+\item Now that the splitter \textbf{k} is known to all, each party $P_i$ generates his mapped adjacency vector	$\textbf{MA}_i$ and also a column replicated matrix $\textbf{CRM}_i$. The previous step provides a unique number $a_i$ to each party. The generated $\textbf{MA}_i$ is added to the $a_i^{th}$ row of $\textbf{CRM}_i$. This modified $\textbf{CRM}_i$ would be each person’s secret.
+
+\item All the parties add these secret matrices using Protocol for secure Addition allowing each of the parties to know the sum of all the $\textbf{(CRM + MA)}'s$. Let this sum be denoted by the matrix $M$.
+
+\item Now we see that the row labels are hidden but the column label is still present. Also, the row ordering does not match the column ordering. Thus, each party $P_i$ will generate its own random matrix $R_i$ and copy the $i^{th}$ column of M and add this column to $a_i^{th}$ column of $R_i$. This matrix is party’s secret in next step. Now, the column labelling of the  matrix is hidden and brought to its right place. 
+
+\item All the parties add these secret matrices using Protocol for secure Addition. Let the resulting sum matrix be $M_1$. This matrix reveals nothing as the splitter of each row is randomly shifted by some value by the underlying $CRM$'s. So, the reverse mapping of $MA$ is not possible.
+
+\item Now the parties perform secure addition to compute the sum of all their $CRM_i$'s and $R_i's$. The sum of $CRM_i$ and $R_i$ for each party is his secret and let all their sum be denoted by matrix $M_2$.
+
+\item All the parties thus have access to both $M_1$ and $M_2$. Each party subtracts $M_1$ from $M_2$ and obtains the unlabelled mapped adjacency matrix of the underlying network.
+
+\end{itemize}
+\item[Step 4:]\hspace{2mm} \textbf{Reverse Mapping}\\
+At this step of the protocol, each party has the unlabelled adjacency matrix and also has knowledge of the splitter \textbf{k} value. With \textbf{k} known, each of them easily reverse map the values in the matrix,i.e replace all the values in the matrix that are greater than \textbf{k} by $0$'s and the rest by $1$'s. Thus, you obtain the required adjacency matrix, ensuring no labels are revealed. \\
+\end{description}
+The Table \ref{table:example} shows the computations that are carried out by the parties. Each column is specific to a party $P_i$ and shows the shares that it has access to. The last row shows the sum that each party computes by adding the respective shares.  
+
+
+
+
+
+%--------------------------------------------------------------------------
+\section{Proof of Security}
+The next question to be addressed is the security aspects of the protocol. How sure can the parties be that none of their information is at jeopardy? We use the simulator approach as used in [2] to show that the information is secure. All the definitions and keywords have been adopted from [2]. For this we need to understand what a view of a party is. The view of a party in the protocol is all the information it sees during its execution. If a party cannot compute something about other parties' input or output then we consider the protocol to be secure.  Let $C$ be the set of corrupted parties who decide to collaborate. Collaboration here involves pooling of their respective views in the protocol. If the collaboration of $t<n$ parties does not reveal anything about the honest parties then we say that protocol is passively secure under threshold $t$. If corrupted parties are allowed to deviate from the protocol and are not able to reveal any information then the protocol is said to be actively secure under threshold $t$. It can be shown that the protocol discussed above is passively secure under threshold $n-2$.\\ %and actively secured under threshold ??.
+
+The proof is constructed using what is known as interactive agents. An interactive agent is a state machine with some input ports and output ports which allow the interactions between agents. These agents model the behaviour of parties, be it decision making or interactions with other parties during the protocol. We define an ideal functionality $F_X$ for each system $\pi_X$ that implements the protocol $X$, wherein, we say that the given system must be as secure as the ideal functionality. $\pi_X$ is an interactive system that will implement the protocol $X$ using interactive agents. $\pi_X$ will contain an agent $P_i$ for each party and an agent $R$ for modelling the communication resource. $P_i$ has an in-port $X.in_i$ where it receives input of the protocol to model the allowed influence and allowed leakage. Similarly we have a an out-port $X.out_i$ that models only the allowed leakage. Apart from these, each party also has ports connecting to the communicating resource $R$. The next thing to be considered is the influence that an adversary can have on a party and the situation where the party himself leaks the information to the adversary. This is handled by the $R.infl_i$ and the $R.leak_i$ ports of $P_i$ correspondingly. This completes the modelling of a party $P_i$. In all the proofs give below, only static security is shown as we assume that the adversary declares the parties it will corrupt. One must also not forget the possibility of the communication resource $R$ itself being compromised. This is captured through the $R.leak$ port on which leakage from $R$ is modelled and the $R.infl$ port that any adversary can influence. \\
+
+To prove the security of the protocol $\pi_X$ we formulate a simple functionality $F_X$ that takes inputs from the parties and generates the correct output and passes it back to the parties. Its internal functioning, however, is treated as a black box. We now need to prove that our protocol $\pi_X$ is as secure as $F_X$. But, on comparing $\pi_X$ with $F_X$, it is clear that $F_X$ has much lesser leakage and influence than $\pi_X$ as $F_X$ permits only allowed leakage and allowed influence. $\pi_X$ on the other hand has different leakage, i.e. each agent in $\pi_X$ and the communication resource have their own leakage and influence ports thus leading to more leakage. The port structure of $\pi_X$ and $F_X$ is also different. This leads to the adversary being able to easily distinguish between $\pi_X$ and $F_X$. In order to overcome this, we require a simulator $S$ which models the leakage and influence of all the parties as well as the communication resource. In this process, the simulator ensures that the port structure of both the interactive systems $\pi_X$ and $F_X$ is the same. Now, it is sufficient that we show that $\pi_X$ and $F_X \diamond S$ (composition of systems) are equivalent. The existence of such a simulator itself is proof enough of the fact that $\pi_X$ is as secure as $F_X$. The general structure of ideal functionality $F_X$ and that of a simulator $S$ for the protocol $X$ would look like that given in figure 1 and figure 2. For every specific protocol, the label $X$ is replaced by that of the protocol. \\
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=.5]{draft1.jpg} 
+\caption{Figure 1: ideal functionality $F_X$}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=.5]{draft2.jpg} 
+\caption{Figure 2: Simulator $S$}
+\end{figure}
+
+\subsubsection{Proof for secure addition}
+ Let $\pi_{add}$ be the protocol for secure addition and $\pi_{AT}$ be the authenticated transfer protocol. We thus need to define an ideal functionality $F_{add}$ that we wish to implement. We therefore define agent $F_{add}$ that uses $F_{ST}$ agent where, $F_{ST}$ is the ideal functionality for implementing secure transfer. \\ \\
+
+\begin{framed}
+\begin{center}
+Agent $F_{add}$
+\end{center} 
+The ideal functionality for Secure addition among n parties is given by function $f: F^n \rightarrow F$ where $F$ is a finite field. 
+\begin{itemize}
+\item \textbf{initialize:} The ideal functionality keeps track of three sets, A 
+(Actively Corrupted Parties), P (Passively Corrupted parties), C (Corrupted 
+Parties). It also keeps bits $delivery-round$, $evaluated$, $inputs-ready$, $input-ready_1$, $input-ready_2,\dots$,$input-ready_n$ $ \in\ \{0,1\}$, 
+initially set to 0.
+
+\item \textbf{Honest inputs:} On input ($clockin$, $i$) on $ADD.infl$ for $i \notin A$, read a message from $ADD.in_i$. If there was a message $x_i$ on $ADD.in_i$ and $x_i$ $\in$ $F$ and $input-ready_i$ = 0, then set $input-ready_i\leftarrow$  1, store ($i, x_i$) and output ($input, i$) on $ADD.leak$.
+\item \textbf{Corrupted inputs:} On input ($change, i, x_i$) on $ADD.infl$, where $i \in A$ and $x_i \in F$ and $evaluated$=0, set $input-ready_i \leftarrow$ 1 and store ($i, x_i$), overriding any such previous value stored for party $i$ (i.e. as long as the function has not been evaluated on the inputs, the corrupted parties are allowed to change their inputs).
+\item \textbf{Simultaneous inputs:}  If it holds in some round that after the clock-in phase ends there exist $i,j\ \notin A$ such that $input-ready_i$ = 0 and $input-ready_j$ = 1, then do a complete break down (wherein the protocol is deliberately brought to a halt and a restart of the protocol is needed). If it happens in some round that after the clock-in phase ends that $input-ready_i$ = 1 for all $i \notin A$ and $inputs-ready$ = 0, then set $inputs-ready \leftarrow$ 1 and for each $i\ \in A$ where $input-ready_i$ = 0, store ($i,x_i$) = ($i,0$).
+\item \textbf{Evaluate function:} On input ($evaluate$) on $ADD.infl$ where $input-ready$ = 1 and $evaluated$ = 0, set $evaluated \leftarrow$ 1, compute $y \approxeq x_1 + x_2 + \dots + x_n$ in field $F$. Then output 
+$\{(i,y)\}_{i \in C}$ on $ADD.leak$, and if $C$ later grows, then output ($j,y$) on $ADD.leak$ for the new $j \in C$.
+\item \textbf{Simultaneous output:} On input ($delivery-round$) on $ADD.infl$, where $evaluated$= 1 and $delivery-round$= 0, proceed as follows: if we are at a point where no party $i \in A$ was clocked out yet, then set $delivery-round\leftarrow$ 1.
+\item \textbf{Delivery:} On input ($clockout, i$) on $ADD.infl$, where $delivery-round$ = 1, output $y$ on $ADD.out_i$.
+\end{itemize}
+\end{framed}
+Once we have the agent,the next step is to build a simulator which will simulate the protocol composed with ideal functionality $F_{ADD}$. We have to show that $\pi_{add} \diamond \pi_{AT}$ is computationally indistinguishable from $F_{ADD} \diamond S$ under environment $Env^t$, where $Env$ is a poly-time environment and $t$ is the maximum number of corrupted parties at a particular instance during the execution of the protocol. We will show this is indistinguishable for $t < n-1$. 
+
+Let $t < n-1$ parties be corrupt during the execution of the protocol. Note that, $t=1$ is a special case that captures the scenario where no party is corrupt. Even this case is important as we need to show that individual parties gain nothing more than necessary, from their view in the protocol. Firstly, consider passive security where $t$ parties are passively corrupt. Adversary notifies the simulator of the parties it is going to corrupt, before the start of the protocol and hence only static corruption considered. Simulator considers these parties to belong to the set $C$ as well as to $P$ of the ideal functionality. Now the simulator S runs an internal copy of $\pi_{add} \diamond \pi_{AT}$ where $x_i$ is the input of each party. These inputs are decided by the environment. The inputs of all the parties in $P$ are leaked to $S$ as these are nothing but allowable leakage. Now $S$ runs the protocol $F_{ADD}$ with $sx_i$ as input for all the parties where $sx_i = x_i$.
+Now comes the next step of the protocol which is run on the internal copy of $\pi_{add} \diamond \pi_{AT}$ by $S$. Each party shares its input $x_i$ with all the parties using the Secret Sharing Protocol. The view of all the parties in $P$ is again leaked to $S$ through $AT.leak$. The view of parties not in $P$ is set by $S$. It knows |P| number of shares of $x_i$ input where $P_i \in P$ and the rest of the shares are chosen uniformly at random from $F$ such that sum of all the shares is $x_i$. Next we have all the parties adds their respective shares and broadcast this sum in the internal copy of $\pi_{add} \diamond \pi_{AT}$. So, $S$ knows all these sums too. Let these sums be $u_i$ corresponding to each party $i$. $S$ also comes to know about output $y$ from $F_{ADD}$ through $ADD.leak$ because of corrupted parties. These two outputs are same as $\pi_{add} \diamond \pi_{AT}$ produces correct output and $F_{ADD}$ is ideal functionality which will generate correct output only.\\ 
+We consider $Env^t$ as an adversary here. Adversary plays following game. It is attached to either $pi_{add} \diamond \pi_{AT}$ or $F_{ADD} \diamond S$. Adversary needs to distinguish between these two systems. That is, it needs to tell which system is it interacting with once the execution of the protocol is complete.\\
+We argue that in above protocol, $Env^t$ (where $t<n-1$) can’t distinguish between two systems. The environment sees the view of all the parties in the protocol. Consider the view of environment as a string of characters formed by concatenating the view of $P_1$ with the view of $P_2$ and then $P_3$ and so on. Given this string, $Env^t$ should output which system it interacted with. If $t < n-1$, then the outputs of both the systems are perfectly indistinguishable because the corrupted parties' shares are all the same and honest parties choose their shares randomly and so did the simulator. Thus, the statistical distance between the strings produced by $\pi_{add} \diamond \pi_{AT}$ and $F_{ADD} \diamond S$ is 0. Therefore, they are perfectly indistinguishable. As $\pi_{AT}$ and $\pi_{ST}$ (used in $F_{ADD}$) are computationally indistinguishable, our protocol is also computationally indistinguishable. \\
+What would happen if t = n-1?
+Recall that the shares the simulator chooses randomly are only those shares  which are shared by the honest parties with other honest parties. When $t = n-1$, only the share $sx_ii$ ( $i^{th}$ share of the only honest party $P_i$ ) will be chosen randomly by the simulator while generating the view of $Env^t$. However, this share is fixed, given the leaked values during the execution of the $\pi_{add} \diamond \pi_{AT}$. Since $u_i$ is known publicly ($P_i$ is the only honest party) and each party in $P$ knows his share that he gave to $P_i$, they can calculate the $sx_{ii}$ using $u_i$ and their shares. Therefore, the random value assumed by $S$ will result in the wrong output and $Env^t$ (adversary) will know which system is it interacting with. Thus, the protocol is not secure for $t = n-1$.
+
+
+\subsubsection{Proof for Secure Permutation}
+Let the protocol for secure permutation be given by $\pi_{perm}$ that uses $\pi_{AT}$ as the protocol for authenticated transfer. Also note that $\pi_{add}$ will be a sub-protocol of $\pi_{perm}$. Since $\pi_{add}$ is proven to be as secure as $F_{add}$, using UC theorem all we need to prove is that rest of the $\pi_{perm}$ (apart from $\pi_{add}$) securely implements $F_{perm}$. Below is the ideal functionality that we wish to implement.\\
+\begin{framed}
+\begin{center}
+Agent $F_{perm}$
+\end{center}
+\begin{itemize}
+\item \textbf{initialize:} The ideal functionality keeps track of three sets, A (Actively Corrupted Parties), P (Passively Corrupted parties), C (Corrupted Parties) as $F_{SC}$. It also keeps bits $delivery-round$, $permuted$, $ready$, $ready_1$, $ready_2$,$\dots$, $ready_n$ $ \in\ \{0,1\}$, 
+initially set to 0.
+
+\item \textbf{Honest inputs:} On input ($clockin$, $i$) on $perm.infl$ for $i \notin A$, read a message from $perm.in_i$. If there was a message '$ready$' on $perm.in_i$ and $ready_i$ = 0, then set $ready_i\leftarrow$  1, store ($i, ready$) and output ($input, i$) on $perm.leak$.
+
+\item \textbf{Corrupted inputs:} On input ($change, i, 'ready'$) on $perm.infl$, where $i \in A$ and and $permuted$=0, set $ready_i \leftarrow$ 1 and store ($i,'ready'$), overriding any such previous value stored for party $i$.
+
+\item \textbf{Simultaneous inputs:}  If it holds, in some round, that after the clock-in phase ends there exists $i,j\ \notin A$ such that $ready_i$ = 0 and $ready_j$ = 1, then do a complete break down. If it happens in some round that after the clock-in phase ends, $ready_i$ = 1 for all $i \notin A$ and $ready$ = 0, then set $ready \leftarrow$ 1 and for each $i\ \in A$ where $ready_i$ = 0, store ($i,'ready'$).
+
+\item \textbf{Permutation:} On input ($permute$) on $perm.infl$ where $ready$ = 1 and $permuted$ = 0, set $permuted \leftarrow$ 1, select a permutation of integers in [1,n] uniformly at random. Let this permutation be $\{a_1, a_2, a_3, \dots, a_n \}$ where each $a_i \in \{1,2,\dots ,n\}$.  Then output 
+$\{(i,a_i)\}_{i \in C}$ on $perm.leak$, and if $C$ later grows, then output ($j,a_i$) on $perm.leak$ for the new $j \in C$.
+
+\item \textbf{Simultaneous output:} On input ($delivery-round$) on $perm.infl$, where $permuted$= 1 and $delivery-round$= 0, proceed as follows: if we are at a point where no party $i \in A$ was clocked out yet, then set $delivery-round\leftarrow$ 1.
+
+\item \textbf{Delivery:} On input ($clockout, i$) on $perm.infl$, where $delivery-round$ = 1, output $a_i$ on $perm.out_i$.
+\end{itemize}
+\end{framed}
+Now we provide a simulator $S_{perm}$, such that $\pi_{perm} \diamond \pi_{AT}$ is indistinguishable from $F_{perm} \diamond S_{perm}$. Let $P$ be  the set of passively corrupted parties following the protocol. The $Env^t$ is the adversary ( $t = |P|$ ) which is going to interact with one of the systems either $\pi_{perm} \diamond \pi_{AT}$ or $F_{perm} \diamond S_{perm}$  and it is going to guess which system is it playing with. \\
+
+Let’s focus on the first pass of the protocol. $S_{perm}$ gets to know the values chosen by parties in $P$ through $perm.leak$. The rest of the values are chosen randomly by $S_{perm}$ just as done by honest parties. In the questioning round of the protocol, $\pi_{add} \diamond \pi_{AT}$ is used and hence, we can assume the security of this step based on the previous proof. The ordered list of current free slots is generated by $S_{perm}$ using the protocol itself. 
+Since $\pi_{add} \diamond \pi_{AT}$ is secure under the environment (adversary) with threshold $t < n-1$ only,we will need to fix $t < n-1$ even  while discussing the security of $\pi_{perm} \diamond \pi_{AT}$. For $t < n-1$, we prove that $\pi_{perm} \diamond \pi_{AT}$ is at least as secure as $F_{perm}$ by showing the view of adversary ( represented by the string as mentioned in the previous proof ) while interacting with $\pi_{perm} \diamond \pi_{AT}$ is same as its view when it interacts with $F_{perm} \diamond S_{perm}$. The values of corrupted parties choices are going to be same in both the cases. But for honest parties, given that $t < n-1$, the uniformly random choices made by $S_{perm}$ will have the same distribution as those made by honest parties. Thus, this results in the perfectly indistinguishable view. This is so because, one party's choice is not affecting or limiting the choice for other parties. The part of string representing the ordered list of free slots will also be indistinguishable as it is based on the random choices made earlier.\\
+The same argument can be carried on in every pass of the protocol to prove the security of the protocol in totality. 
+
+\subsubsection{Proof of SMPGC-Protocol}
+From the SMPGC-Protocol, it is clearly seen that, it is enough to show the security upto the step of computing the unlabelled mapped adjacency matrix. Let $\pi_{ug}$ be the protocol that needs to be implemented. We see that $\pi_{ug}$ uses $\pi_{perm}$ as well $\pi_{AT}$ as its sub-protocols. The ideal functionality that needs to be achieved using $\pi_{ug}$ is as modelled below.Each party here knows his own relationships with the remaining parties.\\
+\begin{framed}
+\begin{center}
+Agent $F_{ug}$
+\end{center} 
+\begin{itemize}
+
+\item \textbf{initialize:} The ideal functionality keeps track of three sets, A 
+(Actively Corrupted Parties), P (Passively Corrupted parties), C (Corrupted 
+Parties) as $F_{SC}$. It also keeps bits $delivery-round$, $evaluated$, $inputs-ready$, $input-ready_1$, $input-ready_2,\dots$,$input-ready_n$ $ \in\ \{0,1\}$, 
+initially set to 0.
+
+\item \textbf{Honest inputs:} On input ($clockin$, $i$) on $ug.infl$ for $i \notin A$, read a message from $ug.in_i$. If there was a message $x_i$ on $ug.in_i$ and $x_i$ $\in$ $F$ and $input-ready_i$ = 0, then set $input-ready_i\leftarrow$  1, store ($i, x_i$) and output ($input, i$) on $ug.leak$ ( $x_i$ is an adjacency vector showing the relationships of $i^{th}$ party..
+
+\item \textbf{Corrupted inputs:} On input ($change, i, x_i$) on $ug.infl$, where $i \in A$ and $x_i \in F$ and $evaluated$=0, set $input-ready_i \leftarrow$ 1 and store ($i, x_i$), overriding any such previous value stored for party $i$ (i.e. as long as the function has not been evaluated on the inputs, the corrupted parties are allowed to change their inputs).
+
+\item \textbf{Simultaneous inputs:}  If it holds in some round that after the clock-in phase ends there exist $i,j\ \notin A$ such that $input-ready_i$ = 0 and $input-ready_j$ = 1, then do a complete break down. If it happens in some round that after the clock-in phase ends that $input-ready_i$ = 1 for all $i \notin A$ and $inputs-ready$ = 0, then set $inputs-ready \leftarrow$ 1 and for each $i\ \in A$ where $input-ready_i$ = 0, store ($i,x_i$) = ($i,0$).
+
+\item \textbf{Evaluate function:} On input ($evaluate$) on $ug.infl$ where $input-ready$ = 1 and $evaluated$ = 0, set $evaluated \leftarrow$ 1, generate an adjacency matrix using the inputs { $x_1, x_2,\dots x_n$ } and then permute this adjacency matrix. Call this permuted matrix $y$. Then output 
+$\{(i,y)\}_{i \in C}$ on $ug.leak$, and if $C$ later grows, then output ($j,y$) on $ug.leak$ for the new $j \in C$.
+
+\item \textbf{Simultaneous output:} On input ($delivery-round$) on $ug.infl$, where $evaluated$= 1 and $delivery-round$= 0, proceed as follows: if we are at a point where no party $i \in A$ was clocked out yet, then set $delivery-round\leftarrow$ 1.
+
+\item \textbf{Delivery:} On input ($clockout, i$) on $ug.infl$, where $delivery-round$ = 1, output $y$ on $ug.out_i$.
+\end{itemize}
+\end{framed}
+
+Now we propose a simulator $S_{ug}$ to prove that $\pi_{ug} \diamond \pi_{AT}$ is indistinguishable from $F_{ug} \diamond S_{ug}$. $S_{ug}$ knows the input of each person. Using this data, calculation of splitter is easy. The values $a_i$ for each party $P_i$ is obtained using the protocol $\pi_{perm}$ whose security is already proven.  It chooses $CRM$ randomly for all the parties as in the protocol and follows rest of the instructions for the protocol as it is. Now, the security of the protocol for secure addition is already proven. In step 3, $S$ chooses a random matrix $R_i$ for each party $P_i$ and follows rest of the instructions mentioned in the step as it is. Rest of the steps are followed by the simulator as mentioned by the protocol with no new random choices being made.\\
+The adversary against which we are going to show the security of this protocol is again $Env^t$ where $t < n-1$ because the protocol for secure addition is being used as a sub-protocol. Even if the view of $t$ ($<n-1$) corrupted parties is fixed, still $S_{ug}$ is able to make random choices for honest parties as they are independent of the choices made by corrupted parties. That is, in no way do the choices of corrupted parties limit the choices of the honest parties.
+
+%--------------------------------------------------------------------------
+\section{Discussions}
+We have seen that all the matrices and vectors that are dealt with belong to   $Z_q$, set of integers modulo $q$. Now, it is important to understand how one has to choose $q$. The value $q$ helps in making every mapped adjacency vector equiprobable from the sample space. This is so because, even if the occurrence of 0's and 1's in the adjacency vector are skewed, it is lost when they are mapped to values in the set $\{0,1,2, \dots ,q\}$ such that every value is equally likely. Thus, $q$ value is dependent on the density of 1's $D$ in the adjacency matrix of the network. Based on the value of $D$. the range $0-q$ is split into two parts ranging from $0-Dq$ and $(Dq+1)-q$. All the 0's in the adjacency vector map to range $0-Dq$ in the mapped adjacency vector and similarly 1's to $(Dq+1)-q$. Thus, larger the $D$ value, larger the $q$ required. \\
+
+Another question that needs to be addressed is the efficiency of the secure permutation generation protocol. Below, we shall compute the average number of passes of the protocol that needs to be executed before the final permutation is generated.\\
+Let $X_i$ be the indicator random variable that takes the value 1 to denote that there is exactly one person who has chosen the number ‘$i$’ during the random picking of numbers by parties in the range $1-n$. Else it takes the value 0. Let X be the random variable given as :\\
+\begin{center}
+   $ X   =   \Sigma^n_{i=1} X_i$
+\end{center}
+Now, the expectation $E(X)$ will give us the average number of parties, in one pass of the protocol, who have chosen numbers randomly such that it is unique (not chosen by others). \\
+$E(X)   =   E(\Sigma^n_{i=1} X_i)   =  n\Sigma E(X_i)$ \\
+The expectation of each $X_i$  can be given as follows : \\
+$E(X_i)  =    ^nC_1\frac{1}{n}(1-\frac{1}{n})^{n-1}   \simeq \frac{1}{e}$ \\
+$\therefore  E(X)  =   nE(X_i) =  \frac{n}{e}$ \\
+Thus we can see that, on an average, there are $\frac{n}{e}$ parties that are likely to pick a unique random number in the first pass. Thus, we would have $n-\frac{n}{e}$ parties actively participating in the second pass.The numbers that they would pick from now would range between $\frac{n}{e} +1$ to $n$. Repeating the above process, we would obtain that the number of parties choosing a unique number in the second pass would be $\frac{ne-n}{e^2}$. 
+Now the question arises as to what the expected number of passes that will be required before all are assigned a unique number. This can be given as we see that the above expectation is actually converging and is of $O(\log n)$.
+   
+
+
+
+%--------------------------------------------------------------------------
+
+\begin{thebibliography}{1}
+
+\bibitem{1}
+Naim Kapucu, Farhod Yuldashev, Tolga Arslan and Fatih Demiroz, \emph{Social Network Analysis (SNA) Applications in 
+Evaluating MPA Classes}
+
+\bibitem{2}
+Ronald Cramer, Ivan Damgard and Jesper Buus Nielsen, \emph{Secure Multiparty Computation and Secret Sharing An 
+Information Theoretic Approach}
+
+\bibitem{3}
+Lars Backstrom, Cynthia Dwork and Jon Kleinberg, \emph{Wherefore art thou r3579x?: anonymized social networks, 
+hidden patterns, and structural steganography.}
+
+\bibitem{4}
+Michael Hay, Gerome Miklau, David Jenson, Don Towsley, Philipp Weis, \emph{Resisting Structural Re-identification 
+in Anonymized Social Networks.}
+
+\bibitem{5}
+J J Potterat, L Phillips-Plummer, S Q Muth, R B Rothenberg, D E Woodhouse, T S Maldonado-Long, H P Zimmerman, J B Muth,
+\emph{Risk network structure in the early epidemic phase of HIV transmission in Colorado Springs.}
+
+\bibitem{6}
+Michael Hay, Gerome Miklau, David Jenson, Philipp Weis and Siddharth Srivastava, \emph{
+Anonymizing Social Networks.}
+
+\bibitem{7}
+Kun Liu, Evimaria Terzi, \emph{
+Towards Identity Anonymization on Graphs.}
+
+\bibitem{8}
+V. Gnanasekar, S.Jayanthi, \emph{
+Privacy Preservation of Social Network Data against Structural Attack using K-Auto restructure.}
+
+\bibitem{9}
+Lisa Singh and Justin Zhan, \emph{
+Measuring topological anonymity in social networks.}
+
+\bibitem{10}
+Bin Zhou, Jian Pei, \emph{
+Preserving Privacy in Social Networks Against Neighborhood Attacks.}
+
+\bibitem{11}
+Lars Backstrom, Dan Huttenlocher, Jon Kleinberg and Xiangyang Lan, \emph{
+Group Formation in Large Social Networks: Membership, Growth and Evolution.}
+
+\bibitem{12}
+Marcel Salathe, Maria Kazandjieva, Jung Woo Lee, Philip Levis, Marcus W. Feldman and James H. Jones, \emph{
+A high-resolution human contact network for infectious disease transmission.}
+
+\bibitem{13}
+Sean Chester, Bruce M. Kapron, Gautam Srivastava, S. Venkatesh, \emph{Complexity of social network anonymization}
+
+\bibitem{14}
+Na Li, Denis Gillet, \emph{Identifying Influential Scholars in Academic Social Media Platforms}
+
+\bibitem{15}
+Meeyoung Cha, Hamed Haddadi, Fabricio Benevenuto, Krishna P. Gummad \emph{Measuring User Influence in Twitter: 
+The Million Follower Fallacy}
+
+\end{thebibliography}
+
+%--------------------------------------------------------------------------
+\end{document}
+
