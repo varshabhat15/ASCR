@@ -1,0 +1,198 @@
+\documentclass{llncs}
+\usepackage{amsmath,amssymb,subfigure}
+\usepackage{algorithm,algorithmic}
+\usepackage{graphicx}
+\usepackage{comment}
+\newtheorem{observation}{Observation}
+\usepackage[switch*]{lineno}
+\usepackage{framed}
+
+\usepackage{color}
+
+\makeatletter
+\def\makeLineNumberLeft{%
+  \linenumberfont\llap{\hb@xt@\linenumberwidth{\LineNumber\hss}\hskip\linenumbersep}% left line number
+  \hskip\columnwidth% skip over column of text
+  \rlap{\hskip\linenumbersep\hb@xt@\linenumberwidth{\hss\LineNumber}}\hss}% right line number
+\leftlinenumbers% Re-issue [left] option
+\makeatother
+
+\makeatletter
+\newcommand\xleftrightarrow[2][]{%
+  \ext@arrow 9999{\longleftrightarrowfill@}{#1}{#2}}
+\newcommand\longleftrightarrowfill@{%
+  \arrowfill@\leftarrow\relbar\rightarrow}
+\makeatother
+
+
+\begin{document}
+
+\title{Secure Multi-party Graph Computation: Elimination of trusted Third Parties }
+%\author{Manas Agarwal\inst{2} \and Rishi Ranjan Singh\inst{1} \and  Shubham Chaudhary\inst{2} \and Sudarshan Iyengar\inst{1}}
+%\authorrunning{Manas Agarwal \and Rishi Ranjan Singh \and Shubham Chaudhary \and Sudarshan Iyengar}
+%
+%\institute{Department of Computer Science and Engineering,
+%Indian Institute of Technology, Ropar,
+%Punjab, India.  \newline
+%\email{\{ rishirs, sudarshan \} @iitrpr.ac.in}
+%\and
+%Department of Mathematics, 
+%Indian Institute of Technology Roorkee, 
+%Uttarakhand, India. \newline
+%\email{\{ manasuma, shubhuma\} @iitr.ac.in}}
+
+
+\maketitle
+\begin{abstract}
+The abstract goes here
+\end{abstract}
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
+\section{Introduction}
+This section should be edited by $\bf{Karthik}$ . The following should be included:
+\begin{itemize}
+\item history of MPC, class average problem, Yao's millionaire problem
+\item give a more MPC flavour
+\item anecdotal examples for motivation
+\item Must have a section called $\bf Our contribution$
+\end{itemize}
+
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
+\section{Preliminaries}
+
+\textcolor{red}{This section must contain a brief to MPC, \\ definitions- party ,view ,adversary ,security (active and passive; static and dynamic), interactive agents, proof of security(include simulator) 
+} 
+
+\begin{itemize}
+\item \textbf{View: } The view of a party is every bit of data that it sees during the execution of the protocol.
+
+\item \textbf{Adversary:} There is a possibility of the parties being corrupted either by sharing their views or by deviating from the protocol (i.e not following the instructions as per the protocol). This situation is modelled with the help of a centralised adversary who is capable of influencing the individual parties. That is, the adversary is able to listen to the channel over which the party is communicating as well as meddle with the data being communicated.
+
+\item \textbf{Allowed influence and leakage:} When a party changes its input (i.e. gives wrong input to the protocol) we do not consider it a deviation from the protocol. Because we can't stop the parties from changing their inputs. For each party, input substitution is not considered as a deviation from the protocol. When a party provides wrong input, $in$, to the protocol it is not considered as a corrupted party, instead it is considered as an honest party whose actual input is $in$.  Thus, input substitution constitutes \textit{allowed influence} that an adversary can have on a party. Anything other than the allowed influence (input substitution) is considered as \textit{actual influence} of an adversary over a party.\\
+A party should know its input to the protocol and the output it should get from the protocol. We cannot deprive any party of this information. Therefore, the input and the output of a party is the \textit{allowed leakage} of the protocol to that party. Anything that the protocol leaks to a party during its execution, other than the allowed leakage, is the \textit{actual leakage} of the protocol to that party.
+
+\item \textbf{Security of a Multiparty Protocol:} When is a multiparty protocol secure? In simple terms, when a party cannot know anything about the inputs of the other parties based on its view only then the protocol is secure. When there are some corrupted parties present, the definition of security changes as follows: if the set of corrupted parties cannot know anything about the inputs of the honest parties based on their views only then the protocol is secure. Parties can be corrupted by an adversary in following ways:
+\begin{itemize}
+\item \textbf{Passive and active corruption:} We say a party is passively corrupted by an adversary when the adversary is only listening to the conversation of the party. Let say adversary has passively corrupted some subset of the parties of size t. If adversary is not able to get any information about the inputs and outputs of the honest parties for any passively corrupted subset of size t then we call the protocol secure against passive corruption of size t.\\
+A party is actively corrupted by an adversary if it is taking all the decisions that should be taken by the party in the protocol. If the active corruption of any t parties does not lead to the leakage of honest parties' input and output then we call the protocol to be active secure against the corruption of size t.
+
+\item \textbf{Static and dynamic corruption:} A protocol is considered statically secure if protocol is actively or passively secure against corruptions of size t if throughout the protocol same set of parties are corrupt, i.e. the set of corrupted parties doesn't change during the execution of the protocol.\\
+While a protocol is considered dynamically secure if it is actively or passively secure even when the parties which are corrupt changes during the protocol but the number of corrupted parties is never more than t.\\
+\end{itemize}
+
+A party can be modeled by an \textit{interactive agent}. An interactive agent has some input ports and some output ports for communication with other interactive agents and an internal state.\newline
+
+The interaction between parties is modeled by an interactive agent, $ \pi_{AT} $, defined in [2]. The description of $ \pi_{AT} $ is given in the appendix. The proof for the security of the interactive agent $ \pi_{AT} $ is also given in [2]. The agent $ \pi_{AT} $ ensures that the interaction between two parties is secure and information exchanged between them is not leaked to other parties. The protocol, say $ \pi_{prt} $, is nothing but a set of interactions between parties, hence it can be modeled using n interactive agents $ IP_i $ for each party and agent $ \pi_{AT} $ for interaction between these parties. Interactive agent $ IP_i $ has input ports named $ ST.in_i $, $ AT.infl_i $ and $ AT.out_j $; output ports named $ ST.out_i $, $ AT.leak_i $ and $ At.in_j $ where $ j\neq i\ and\ j\in \{1,2,\dots,n\} $. The ports $ ST.in_i $ and $ ST.out_i $ are for the input and output of the party respectively. The ports $ At.in_j $ and $ AT.out_j $ are to interact with agent $ \pi_{AT} $ to talk to the party $ P_j $. The output port $ AT.leak_i $ is used to leak the view of the party who is corrupted. The input port $ AT.infl_i $ is used to deliver the instructions to the party $ P_i $ when it is actively corrupted. The party will follow these instructions if it is actively corrupted.\\
+For each protocol $ \pi_{prt} $, we construct an \textit{ideal functionality} for this protocol named $ F_{prt} $. The ideal functionality is also an interactive agent. It has $ n $ input ports named $ ST.in_i $ and $ n $ output ports named $ St.out_n $ where $ i\in \{1,2,\dots,n\} $. Each input port $ ST.in_i $ is to take input of party $ P_i $ and each output port $ St.out_n $ is to deliver the output for party $ P_i $. The ideal functionality takes the inputs of each party and computes the function that the protocol should compute and delivers the outputs to the parties. The ideal functionality also has an input port $ F.infl $ and output port $ F.leak $. The output port $ F.leak $ is to leak the views of all the corrupted parties. And the input port $ F.infl $ is to influence the actively corrupted parties i.e. take the instructions for actively corrupted parties.\\
+\textcolor{red}{Insert Diagrams-agent AT, party agent, ideal agent}\\
+We need to show that the protocol $ \pi_{prt} $ is as secure as the ideal functionality $ F_{prt} $. To show this, we need to show the existence of an Simulator $ S $, $ S $ is also modeled by an interactive agent. $ S $ has input ports $ F.leak $, $ AT.infl $ and $ AT.infl_i $ where $ i\in \{1,2,\dots,n\} $ and output ports $ F.infl $, $ AT.leak $ and $ AT.leak_i $ where $ i\in \{1,2,\dots,n\} $. 
+If we compose the interactive agents $ F_{prt} $ and $ S $ (i.e. if one interactive agent has an input port with same name as the output port of other interactive agent then join them together), we get an interactive system $ F_{prt} \circ S $. $ F_{prt} \circ S $ has same port structure as $ \pi_{prt} $.\\
+Now we define an agent for the adversary, $Env^t$, where t is the maximum number of parties that adversary corrupts. The agent $Env^t$ has input ports $ AT.leak $, $ ST.out_i $ and $ AT.leak_i $; and output ports $ AT.infl $, $ ST.in_i $ and $ AT.infl_i $ where $ i\in \{1,2,\dots,n\} $. When we compose $Env^t$ with $ F_{prt} \circ S $ or with $ \pi_{prt} $, it becomes a closed interactive system, i.e. there are no open ports in this system.\\
+To prove the security of the protocol $ \pi_{prt} $, we play the following game with the adversary $ Env^t $: Attach the adversary $ Env^t $ with either $ F_{prt} \circ S $ or $ \pi_{prt} $. Adversary has to tell which interactive system it is attached to.\\
+If we can build a simulator such that the adversary is not able to distinguish between the two interactive systems, then we can say that the protocol $ \pi_{prt} $ is as secure as the ideal functionality $ F_{prt} \circ S $. If both the systems $ \pi_{prt} $ and $ F_{prt} \circ S $ are behaving same with respect to adversary $ Env^t $, then Simulator $ S $ is essentially computing the actual leakage and influence from allowed leakage and influence. Therefore, the actual leakage and influence contains no more information than the allowed leakage and influence.
+\end{itemize}
+
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
+\section{The SMPGC Problem}
+
+\textcolor{red}{This section must contain three parts : problem definition, the Protocol, proof of security(passive and static)  
+} 
+\subsection{Problem Definition}
+
+\subsection{SMPGC Protocol}
+
+\subsection{Proof of Security}
+
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
+\section{The SMPPC Problem}
+
+\textcolor{red}{This section must contain three parts : problem definition, the Protocol, proof of security(passive and static) Please note that the previous section uses it as a black box.  
+}
+\subsection{Problem Definition}
+There are n parties. They want to assign each one of themselves a number from 1 to n. It can be viewed as permuting the parties such that each party knows its position in the permutation. A party should not know anything about the position of other parties in the permutation. The permutation generated by the protocol should be random. The protocol should be such that each possible permutation should be equally likely to be assigned.
+\subsection{SMPPC Protocol}
+\begin{description}
+\item[Step 1:]\hspace{2mm} All the parties (active participants) choose a random number between $1 - n$
+\item[Step 2:]\hspace{2mm} Now begins the rounds of questioning. In each round of questioning, the following question is asked- “Has anyone chosen the number $i$ ?”, where $i$ runs from $1-n$. The answer to the question is obtained through voting implemented using the protocol for secure addition where each party shares a secret 1 to denote a positive vote (Yes) and 0 otherwise (No).
+\item[Step 3:]\hspace{2mm} What we obtain as answer in the questioning round $i$, is the number of people who happened to choose their random number as $‘i’$. All the parties also maintain an ordered list of current free slots. Free slots list has the numbers that are yet to be assigned. Initially the list is empty.
+\begin{itemize}
+\item If the voting results in the answer zero, it indicates none have chosen the number $i$. The particular $i$ is then queued in the list of free slots.
+\item If the voting results in the answer one, then there are no duplicates. Hence, it is assumed that the party is allotted the first number in the free slot list.Thus, the particular $i$ is dequeued from the list. If the free slot list is currently empty, then the party is assumed to have chosen the number $i$ itself.
+\item If the voting results in an answer greater than one, then it indicates that there are duplicates as more than one party has chosen the same number. In this case, none of the parties are assigned any number in this round. The particular $i$ is added to the free slot instead.
+\end{itemize} 
+\item[Step 4:]\hspace{2mm} Let the number of parties that chose unique integers in step 1 be $x$. Then, after the last round of questioning - “Has anyone chosen the number `$n$'?” - all the $x$ parties would have been allotted a unique number in the range $1-x$.
+ \item[Step 5:]\hspace{2mm} The steps 1 through 4 is repeated until all the parties are assigned a random number. Each cycle of steps 1-4 is called a pass. In each pass, the following changes are made:
+ \begin{itemize}
+ \item Only those parties that had selected duplicate numbers in the previous pass and hence not allotted a number, actively participate. The parties who are assigned a number continue participating passively.
+ \item The $‘x’$ parties whose number was fixed in any of the previous passes continue to participate passively where they only take part in voting. Their vote is 0 in each round of the passes.
+ \item When repeating the step 1, the active participants now choose a random number from the range $(x+1) - n$ instead of $1-n$
+ \item In each pass, for questioning rounds only the numbers from $(x+1)$ to $n$ will be considered.
+ \end{itemize}
+\end{description}
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
+
+\subsection{Proof of Correctness}
+To prove the correctness of the protocol, it is enough to show that:
+\begin{enumerate}
+\item Each party is assigned a unique number once the execution of the protocol is finished.
+\item The permutation assigned to parties is selected uniformly at random from the set of all the permutation on numbers from $1-n$.
+\end{enumerate}
+\textit{Proof:} In the protocol, a party is assigned a number $i\in \{1,2,\dots ,n\}$ only when it picked a number $j\in \{1,2,\dots ,n\}$ and no other party picked the number $j$. Once a party is assigned a number from $\{1,2,\dots ,n\}$, after that its contribution towards the protocol is passive. It will not be assigned any number again. No other party will chose the number assigned to this party in next rounds of the protocol, as the random selection of the numbers is allowed from the non-assigned numbers only. There are only $n$ numbers, so each of the $n$ parties will be assigned a number. However, a question may arise - what if the parties does not follow the protocol? This situation will be tackled in the following section. Therefore, each party is assigned a unique number from the set $\{1,2,\dots ,n\}$.\\
+Each possible permutation should be equally likely to be assigned to the parties. The final choice of the permutation by the protocol is random as it is based on the random choices of the parties. To prove this, it is enough to show that a party $P_i$ is equally likely to be assigned any number from $\{1,2,\dots ,n\}$. In each pass of the protocol, $P_i$ selects a number from $i\in \{1,2,\dots ,n\}$, uniformly at random. Whether $i$ will be assigned to this party depends upon the random selections made by other parties in the protocol. \textcolor{red}{Complete the proof.}
+
+\subsection{Proof of Security}
+As we discussed in the preliminaries, we need to define a simulator $ S_{prm} $ for the permutation protocol $ \pi_{prm} $ to prove that $ \pi_{prm} $ is as secure as the ideal functionality $ F_{prm} $. Following is the description of $ F_{prm} $:\\
+\begin{framed}
+\begin{center}
+Agent $F_{perm}$
+\end{center}
+\begin{itemize}
+\item \textbf{initialize:} The ideal functionality keeps track of three sets, A (Actively Corrupted Parties), P (Passively Corrupted parties), C (Corrupted Parties) as $F_{SC}$. It also keeps bits $delivery-round$, $permuted$, $ready$, $ready_1$, $ready_2$,$\dots$, $ready_n$ $ \in\ \{0,1\}$, 
+initially set to 0.
+
+\item \textbf{Honest inputs:} On input ($clockin$, $i$) on $perm.infl$ for $i \notin A$, read a message from $perm.in_i$. If there was a message '$ready$' on $perm.in_i$ and $ready_i$ = 0, then set $ready_i\leftarrow$  1, store ($i, ready$) and output ($input, i$) on $perm.leak$.
+
+\item \textbf{Corrupted inputs:} On input ($change, i, 'ready'$) on $perm.infl$, where $i \in A$ and and $permuted$=0, set $ready_i \leftarrow$ 1 and store ($i,'ready'$), overriding any such previous value stored for party $i$.
+
+\item \textbf{Simultaneous inputs:}  If it holds, in some round, that after the clock-in phase ends there exists $i,j\ \notin A$ such that $ready_i$ = 0 and $ready_j$ = 1, then do a complete break down. If it happens in some round that after the clock-in phase ends, $ready_i$ = 1 for all $i \notin A$ and $ready$ = 0, then set $ready \leftarrow$ 1 and for each $i\ \in A$ where $ready_i$ = 0, store ($i,'ready'$).
+
+\item \textbf{Permutation:} On input ($permute$) on $perm.infl$ where $ready$ = 1 and $permuted$ = 0, set $permuted \leftarrow$ 1, select a permutation of integers in [1,n] uniformly at random. Let this permutation be $\{a_1, a_2, a_3, \dots, a_n \}$ where each $a_i \in \{1,2,\dots ,n\}$.  Then output 
+$\{(i,a_i)\}_{i \in C}$ on $perm.leak$, and if $C$ later grows, then output ($j,a_i$) on $perm.leak$ for the new $j \in C$.
+
+\item \textbf{Simultaneous output:} On input ($delivery-round$) on $perm.infl$, where $permuted$= 1 and $delivery-round$= 0, proceed as follows: if we are at a point where no party $i \in A$ was clocked out yet, then set $delivery-round\leftarrow$ 1.
+
+\item \textbf{Delivery:} On input ($clockout, i$) on $perm.infl$, where $delivery-round$ = 1, output $a_i$ on $perm.out_i$.
+\end{itemize}
+\end{framed}
+
+Let $str$ be the string that is obtained by concatenating views of all the parties from $P_1$ to $P_n$. If we prove that $str$ for $ \pi_{prm} $ and $ F_{prm} \circ S_{prm} $ are statistically indistinguishable from each other then $Env^t$ can't distinguish the one system from the another. Following is the description of the Simulator.\\
+We know that the protocol $ \pi_{add} $ is secure under dynamic and active corruption with threshold $t=n-1$. Using the Universally Composable (UC) theorem mentioned in [2], we don't need to separately define the simulator's actions for $ \pi_{add} $ used in $ \pi_{prm} $ as a sub protocol. We can use the simulator $ S_{add} $'s actions when $\pi_{add}$ is being executed in the $\pi_{prm}$. We'll define rest of the $S_{prm}$'s actions. There are no inputs that parties give to the protocol, but random choices. At the start of the protocol $Env^t$ sends the set of parties that it is going to corrupt to the port $AT.infl$. \\
+We will first consider passive and static security. Let $C$ be the set of passively corrupted parties. Note that, $C$ can't be of size more than $n-2$ otherwise the security of $\pi_{add}$ will break. The simulator $S_{prm}$ should be such that $ \pi_{prm} $ and $ F_{prm} \circ S_{prm} $ behaves similarly. We will run a copy of $ \pi_{prm} $ inside the $S_{prm}$ under same adversary (or environment) $Env^t$, while describing the actions of simulator in order to make the decisions taken by simulator clear. In first step of protocol, each party generates a random number from the set $\{1,2,\dots,n\}$. The number generated by party $P_i$ will be leaked to simulator through $ST.leak_i$ where $P_i\in C$. For the set of honest parties it randomly generates a number from $\{1,2,\dots,n\}$. As honest parties were doing exactly the same and views of corrupted parties are available to $S_{prm}$, the string $str$ consisting of views of all parties until now, are indistinguishable for both the systems. In the second step of protocol, all the parties are performing addition using $\pi_{add}$, $S_{prm}$ will mimic the behavior of $S_{add}$ in this step. The contents of \emph{free slot list} is known to all the parties, therefore it is known to the simulator. In the step 4, step 1 is repeated just with a different range to pick the numbers from. Therefore, the actions of simulator in step one can be extended to actions required in step three. Simulator will always add 0 to the view of an party which has already been assigned a number. For the rest of the parties, simulator behaves in same way it did in step 1. The step 5 is just a repetition of Step 1 to Step 4 and we have already dealt with those cases. \textbf{Therefore, the protocol $\pi_{prm}$ is secure under passive and static corruption under the threshold $t=n-2$.}\\
+Take the case for active and static security. As mentioned earlier, input substitution is not considered as deviation or active corruption of a party. In the protocol $\pi_{prm}$, what constitute active corruption of a party. Let $C$ be the set of actively corrupted parties. In the step 1 of the protocol, an adversary can only change the number that the corrupted party was going to select. This deviation is same as the input substitution. We assume the party to be honest whose input is the number selected by the party. In the step 2 and 3, the deviation from protocol can be of following types:
+\begin{enumerate}
+\item A party has chosen number $i$ in step 1, but he votes 0 for the question: \textit{Has anyone chosen the number $i$?} and votes 1 for the question: \textit{Has anyone chosen the number $j$?} where $j\neq i$.
+\item A party votes $x\geq 2$ for any question or it votes 1 for multiple questions.
+\item A party votes a negative number to counter the effect of its vote $x\geq 2$ in a different question.
+\end{enumerate}
+The deviation of type 1 is input substitution only i.e. if a party is voting 1 for the question: \textit{Has anyone chosen the number $j$?} but it had chosen $i$ in the previous step then we assume that it is an honest party which would have chosen $j$ in the step 1.\\
+The deviation of type 2 can be easily detected by summing up the answer to each question at the end of each pass. If the sum is more than $n$ then there are actively corrupted parties present in the protocol and protocol will halt.\\
+The deviation of type 3 cannot always be detected. There might be the cases when the sum of result of all the questions is equal to $n$, but there are actively corrupt parties present in the protocol whose influence is more than the allowed influence. For example, assume only one party, say $P_i$, is actively corrupted. If $P_i$ does not deviate from the protocol, assume the result of voting for the question: \textit{Has anyone chosen the number $j$?} is 1 because only $P_i$ has chosen $j$. Also assume the result of the voting for the question: \textit{Has anyone chosen the number $k$} is 2, because some two parties have chosen the number $k$. The party $P_i$ can vote 3 (instead of 1) for the question: \textit{Has anyone chosen the number $j$?} and it votes -2 (i.e. $m-2$, if we are doing the addition under modulo $m$, $m>n$) for the question: \textit{Has anyone chosen the number $k$}. In the case mentioned above the active deviation of $P_i$ can be detected by anyone one of the parties which voted 1 for the number $k$, because they know that result should be atleast 1 but it is 0 in the case above. But if $P_i$ votes -1 (m-1) for the number $k$ and -1 for some other number $k'$, assuming that at least 2 parties voted 1 for the number $k'$ and $k$ both. In this case, the party $P_i$'s deviation will not get caught and can result in disrupting the output of the protocol. Assume exactly 2 parties voted 1 for the number $k$, the result of the question: \textit{Has anyone chosen the number $k$} is going to be 1 because $P_i$ voted -1 for $k$. Both the parties will now assume that there is no collision (when in fact there is a collision) and they will take the first number from free slot list or they both will take number $k$ if free slot list is empty. The result is, two parties are assigned the same number, which is undesirable. Also, for the number $j$ there was no collision, but the deviation resulted in the collision at number $j$. But, this does not means that the adversary can make an actively corrupted party deviate from protocol in this way without worrying about getting caught. When an adversary is actively corrupting a party with deviation type 3, it runs the risk of getting caught.\textbf{The protocol $\pi_{prm}$ is not completely secure under the active corruption.}\\
+Take the case for passive and dynamic security. There can be different set of passively corrupted parties $C$ for each step of the $\pi_{prm}$. The set of corrupted parties cannot be changed during a round. If in the same round, the adversary changes the set of corrupted parties from $C_1$ to $C_2$ then it is equivalent to the adversary corrupting the $C_1 \cup C_2$ in that round. The argument can be extended to any number of times the adversary changed the set of corrupted parties during a round. Without losing the generality, we can assume that the adversary does not change the set of corrupted parties in a round. In the step 1, the adversary can corrupt a set $C$, of size $n-2$, parties and get to know their views, i.e. which number did they choose. In the next step, i.e. the rounds of questioning, the adversary corrupts only one party $P_i$ which was not corrupted in the step 1. After these rounds are completed, the adversary will get to know the number that the party $P_i$ chose in the step 1, based on the information: to which question did the $P_i$ voted 1. The adversary knows what all the parties in the set $C$ are going to vote for each question and it also knows what $P_i$ is going to vote in each questioning round. Let say for the question: \textit{Has anyone chosen the number $j$?}, the result of the voting would have been $x$ according to the information known to the adversary, but the actual result is $x+1$. The extra vote is coming from the party which is honest in all the rounds. Therefore, adversary is able to determine the input of the honest party without crossing the security threshold $t=n-2$ in any round (or step). \textbf{Therefore, the protocol $\pi_{prm} $ is not secure under dynamic corruption.}
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
+\section{Related work}
+
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
+\section{Conclusion}
+
+\textcolor{red}{This section will discuss the prospective future work like that of looking at the active security aspect of the SMPGC protocol.
+}
+
+%------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+\end{document}
